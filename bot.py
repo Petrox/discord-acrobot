@@ -5,15 +5,14 @@ import random
 import threading
 import time
 import sys
-import string
 
 client = discord.Client()
 
 true = 1
 false = 0
 
-acro_time = 90
-vote_time = 45
+acro_time = 45
+vote_time = 30
 start_acro = 3
 rounds = 5
 total_weight = 70
@@ -38,14 +37,11 @@ help_main04	= "You submit your vote by typing ctrl+k and messaging " + nick + " 
 help_main05	= "For more information, please ask " + chanowner + ", " + botmaster + " or one of the ops for help."
 # END CONFIGURATION
 
-
 class AcroBot():
 	def __init__(self):
 		print("AcroBot online!")
 
 		self.rnd = random.Random(time.time())
-		self.mode_switcher = threading.Timer(acro_time, self.switch_mode)
-		self.vote_time = threading.Timer(vote_time, self.round)
 
 		self.on = false
 		self.scores = {}
@@ -56,7 +52,6 @@ class AcroBot():
 		self.which_round = 0
 		self.acro = ""
 		self.mode = ""
-		self.message = discord.Message
 
 	def run(self, token):
 		client.run(token)
@@ -65,26 +60,26 @@ class AcroBot():
 		print("Disconnecting...")
 		sys.exit()
 
-	def round(self):
+	def round(self, message):
 		for n in range(len(self.this_round_nicks)):
 			if self.this_round_nicks[n] in self.scores:
 				self.scores[self.this_round_nicks[n]] += self.this_round_scores[n]
 			else:
 				self.scores[self.this_round_nicks[n]] = self.this_round_scores[n]
 
-		yield from client.send_message(self.message.channel, "Voting time is up!")
+		yield from client.send_message(message.channel, "Voting time is up!")
 		for n in range(len(self.this_round_nicks)):
 			if self.this_round_scores[n] > 0:
-				yield from client.send_message(self.message.channel, self.this_round_nicks[n] + "'s response was '" + self.this_round_acros[n] + "'and got " + str(self.this_round_scores[n]) + " votes!")
+				yield from client.send_message(message.channel, self.this_round_nicks[n] + "'s response was '" + self.this_round_acros[n] + "'and got " + str(self.this_round_scores[n]) + " votes!")
 
 		if self.which_round == rounds:
-			yield from self.endgame()
+			yield from self.endgame(message)
 			return
 
-		yield from client.send_message(self.message.channel, "The score stands at:")
+		yield from client.send_message(message.channel, "The score stands at:")
 		for nick in self.scores.keys():
 			if self.scores[nick] > 0:
-				yield from client.send_message(self.message.channel, nick + " with a score of " + str(self.scores[nick]) + "!")
+				yield from client.send_message(message.channel, nick + " with a score of " + str(self.scores[nick]) + "!")
 
 		self.this_round_nicks = []
 		self.this_round_acros = []
@@ -94,19 +89,25 @@ class AcroBot():
 		self.which_round += 1
 		self.gen_acro(start_acro + self.which_round - 1)
 		self.mode = "ACRO"
-		yield from client.send_message(self.message.channel, "Round " + str(self.which_round) + "! The new acro is: " + self.acro)
-		threading.Timer(acro_time, self.switch_mode).start()
+		yield from client.send_message(message.channel, "Round " + str(self.which_round) + "! The new acro is: " + self.acro)
 
-	def switch_mode(self):
+		yield from asyncio.sleep(acro_time)
+		yield from self.switch_mode(message)
+
+	def switch_mode(self, message):
+
 		self.mode = "VOTE"
-		yield from client.send_message(self.message.channel, "Acro time is up! Please vote now on the following choices:")
+		yield from client.send_message(message.channel, "Acro time is up! Please vote now on the following choices:")
 		for a in range(len(self.this_round_acros)):
-			yield from client.send_message(self.message.channel, "#" + str(a) + ": " + self.this_round_acros[a])
+			yield from client.send_message(message.channel, "#" + str(a) + ": " + self.this_round_acros[a])
 
-		threading.Timer(vote_time, self.round).start()
+		yield from asyncio.sleep(vote_time)
+		yield from self.round(message)
 
-	def startgame(self):
+	def test(self):
+		yield from client.send_message(message.channel, "TEST")
 
+	def startgame(self, message):
 		# The following (hopefully) fixes a bug that carries
 		# acros and scores across games
 		self.scores = {}
@@ -120,18 +121,20 @@ class AcroBot():
 		self.gen_acro(start_acro)
 		self.mode = "ACRO"
 
-		yield from client.send_message(self.message.channel, 'Starting a new game! Get Ready!')
-		yield from client.send_message(self.message.channel, 'Round ' + str(self.which_round) + '!')
-		yield from client.send_message(self.message.channel, 'The new acro is: ' + self.acro)
+		yield from client.send_message(message.channel, 'Starting a new game! Get Ready!')
+		yield from client.send_message(message.channel, 'Round ' + str(self.which_round) + '!')
+		yield from client.send_message(message.channel, 'The new acro is: ' + self.acro)
 
-		threading.Timer(acro_time, self.switch_mode).start()
+		yield from asyncio.sleep(acro_time)
+		yield from self.switch_mode(message)
 
-	def endgame(self):
-		yield from client.send_message(self.message.channel, "\x02\x0304The game is over!")
-		yield from client.send_message(self.message.channel, "\x02\x0304Ending scores:")
+	def endgame(self, message):
+		yield from client.send_message(message.channel, "\x02\x0304The game is over!")
+		yield from client.send_message(message.channel, "\x02\x0304Ending scores:")
 		for nick in self.scores.keys():
-			yield from client.send_message(self.message.channel, nick + " with a score of " + str(self.scores[nick]) + "!")
+			yield from client.send_message(message.channel, nick + " with a score of " + str(self.scores[nick]) + "!")
 
+	@asyncio.coroutine
 	def on_privmsg(self, channel, message):
 		if message.author.id == client.user.id:
 			return
@@ -146,12 +149,12 @@ class AcroBot():
 			yield from client.send_message(channel, help_main05)
 
 		elif message.content.startswith("!start"):
-			yield from self.startgame()
+			yield from self.startgame(message)
+		elif message.content.startswith("!stop"):
+			yield from self.endgame(message)
 		elif message.content.startswith("!shutdown"):
 			yield from client.send_message(channel, "Have fun, bye!")
 			self.disconnect()
-		elif self.on == false:
-			yield from client.send_message(message.channel, "Sorry, no game is currently running. Try '!help'.")
 		elif self.mode == "ACRO" and message.channel.is_private:
 			if self.confirm_acro(message.content.split()) == false:
 				yield from client.send_message(message.channel, "That does not match the acro. Try again.")
@@ -171,14 +174,17 @@ class AcroBot():
 					return
 		elif self.mode == "VOTE" and message.channel.is_private:
 			try:
-				vote = int(message.content.trim())
-				if message.author.id not in self.this_round_nicks:
+				vote = int(message.content)
+				if vote not in self.this_round_nicks:
+					yield from client.send_message(message.channel)
+					return
+				elif message.author.id not in self.this_round_nicks:
 					yield from client.send_message(message.channel, "You can't vote if you don't participate.")
 					return
-				if message.author.id == self.this_round_nicks[vote]:
+				elif message.author.id == self.this_round_nicks[vote]:
 					yield from client.send_message(message.channel, "You can't vote for yourself. Try again.")
 					return
-				if message.author.id not in self.voted:
+				elif message.author.id not in self.voted:
 					self.this_round_scores[vote] += 1
 					self.voted.append(message.author.id)
 					yield from client.send_message(message.channel, "Your vote has been counted.")
@@ -229,13 +235,13 @@ acro = AcroBot()
 @client.event
 @asyncio.coroutine
 def on_ready():
+	yield from client.change_status(game=discord.Game(name="Acro, motherfucker!"))
 	print('Logged in as', client.user.name, client.user.id)
 
 
 @client.event
 @asyncio.coroutine
 def on_message(message):
-	acro.message = message
 	yield from acro.on_privmsg(message.channel, message)
 
 acro.run('MjIzNjI1MzU2ODAyOTE2MzU0.CrOq7Q.FBqjuX16eUTz214axIpBt_gYduI')
