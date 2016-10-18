@@ -17,24 +17,23 @@ start_acro = 3
 rounds = 5
 total_weight = 70
 weight = [3, 3, 3, 3, 3, 4, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 1, 3, 3, 3, 3, 2, 2, 1, 2, 2]
-		# A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z
+	# A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z
 alphabet = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
 allow_doubles	= true 	# Allow the same letter twice in a row
 allow_triples	= false # Allow the same letter three times in a row
 
-bold=""
-red =""
-chanowner="---"
-botmaster="---"
-normal=""
+chanowner="lipho"
+botmaster="alexa"
 nick="AcroBot"
-# The builtin help system. This is a horrible kludge, but it works. :P
-help_main01	= bold + red + "How to play acro: " + normal + "At the start of each round I will give you an acro (for example: lmao). You then have to make up a phrase to fit that acro (for example: leather makes ankles oily)."
-help_main02	= "You enter your acro by typing /msg " + nick + " <your answer>"
-help_main03	= "After the alotted time has passed, I will display a numbered list of all the acros entered and a vote will then be held to determine the winner. You must then pick your favourite acro and vote for it."
-help_main04	= "You submit your vote by typing ctrl+k and messaging " + nick + " <your vote> (" + bold + "note:" + normal + " you only have to type the number of your vote, for example /msg " + nick + " 5)"
-help_main05	= "For more information, please ask " + chanowner + ", " + botmaster + " or one of the ops for help."
+
+help = [
+"How to play acro: At the start of each round I will give you an acro (for example: lmao). You then have to make up a phrase to fit that acro (for example: leather makes ankles oily).",
+"You enter your acro by typing /msg " + nick + " <your answer>",
+"After the alotted time has passed, I will display a numbered list of all the acros entered and a vote will then be held to determine the winner. You must then pick your favourite acro and vote for it.",
+"You submit your vote by typing ctrl+k and messaging " + nick + " <your vote> (note: you only have to type the number of your vote, for example /msg " + nick + " 5)",
+"For more information, please ask " + chanowner + ", " + botmaster + " or one of the ops for help."
+]
 # END CONFIGURATION
 
 class AcroBot():
@@ -108,8 +107,7 @@ class AcroBot():
 		yield from client.send_message(message.channel, "TEST")
 
 	def startgame(self, message):
-		# The following (hopefully) fixes a bug that carries
-		# acros and scores across games
+		# Reset everything when starting a new game
 		self.scores = {}
 		self.this_round_nicks = []
 		self.this_round_acros = []
